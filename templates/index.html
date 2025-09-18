@@ -6,7 +6,6 @@
   <title>ToolRent — аренда профессионального инструмента: быстро и недорого</title>
   <meta name="description" content="Аренда проф. инструмента с самовывозом или доставкой. Прозрачные цены, залог, наличие. Забронируйте за 1 минуту: перфоратор, штроборез, тепловая пушка, тепловизор." />
   <meta name="theme-color" content="#1E3A8A" />
-  <!-- Open Graph / Social -->
   <meta property="og:type" content="website" />
   <meta property="og:locale" content="ru_RU" />
   <meta property="og:title" content="ToolRent — аренда инструмента сегодня" />
@@ -25,8 +24,8 @@
     .btn--primary{background:var(--primary);color:#fff}
     .btn--secondary{background:var(--accent);color:#111827}
     .btn--ghost{background:#fff;border-color:var(--line);color:var(--fg)}
-    .btn[disabled]{opacity:.55;cursor:not-allowed}
-    .tag{padding:.35rem .7rem;border:1px solid var(--line);border-radius:999px;background:#fff;color:#111827;font-size:.9rem;cursor:pointer}
+    .btn[aria-disabled="true"],.btn[disabled]{opacity:.55;cursor:not-allowed}
+    .tag{padding:.35rem .7rem;border:1px solid var(--line);border-radius:999px;background:#fff;color:#111827;font-size:.9rem;display:inline-flex;align-items:center;gap:.3rem}
     .tag[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:#fff}
     .badge{display:inline-flex;align-items:center;gap:.45rem;padding:.25rem .55rem;border-radius:999px;font-size:.85rem;font-weight:600}
     .dot{inline-size:.55rem;block-size:.55rem;border-radius:50%}
@@ -49,6 +48,7 @@
     .tools__head{display:flex;flex-wrap:wrap;align-items:center;gap:.8rem;justify-content:space-between;margin-bottom:14px}
     .search{position:relative;flex:1;min-width:260px}
     .search input{width:100%;padding:.75rem 2.6rem .75rem .9rem;border:1px solid var(--line);border-radius:999px}
+    .search button{display:none}
     .search svg{position:absolute;right:.8rem;top:50%;transform:translateY(-50%);opacity:.6}
     .tags{display:flex;flex-wrap:wrap;gap:.5rem}
     .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
@@ -75,7 +75,9 @@
     label{font-weight:600}
     input,select,textarea{padding:.7rem .8rem;border:1px solid var(--line);border-radius:12px;font:inherit}
     textarea{min-height:90px;resize:vertical}
-    .success{display:none;border:1px solid #86efac;background:#f0fdf4;color:#14532d;border-radius:12px;padding:12px;margin-top:10px}
+    .flash{border-radius:12px;padding:12px;margin-top:10px}
+    .flash--success{border:1px solid #86efac;background:#f0fdf4;color:#14532d}
+    .flash--error{border:1px solid #fca5a5;background:#fee2e2;color:#991b1b}
     .stack{display:grid;gap:.6rem}
     .testimonials{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
     .faq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
@@ -121,19 +123,66 @@
       </div>
     </section>
 
-    <section id="tools" class="tools" aria-
-      labelledby="tools-title">
+    <section id="tools" class="tools" aria-labelledby="tools-title">
       <div class="container">
         <h2 id="tools-title">Инструменты в наличии</h2>
         <div class="tools__head">
-          <div class="search" role="search">
+          <form class="search" role="search" action="{{ url_for('index') }}">
             <label class="sr-only" for="q" aria-hidden="true" style="position:absolute;left:-9999px">Поиск по названию</label>
-            <input id="q" type="search" inputmode="search" placeholder="Поиск по названию…" aria-label="Поиск по названию" />
+            <input id="q" type="search" inputmode="search" name="q" placeholder="Поиск по названию…" aria-label="Поиск по названию" value="{{ search_term }}" />
+            <input type="hidden" name="tag" value="{{ active_tag }}" />
+            <button type="submit">Найти</button>
             <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          </form>
+          <div class="tags" role="toolbar" aria-label="Фильтр по тегам">
+            <a class="tag" href="{{ url_for('index', q=search_term) }}" aria-pressed="{{ 'true' if active_tag == 'all' else 'false' }}">Все</a>
+            {% for tag in tags %}
+              <a class="tag" href="{{ url_for('index', q=search_term, tag=tag) }}" aria-pressed="{{ 'true' if active_tag == tag else 'false' }}">#{{ tag }}</a>
+            {% endfor %}
           </div>
-          <div class="tags" id="tagBar" role="toolbar" aria-label="Фильтр по тегам"></div>
         </div>
-        <div class="grid" id="grid" aria-live="polite"></div>
+        {% if tools %}
+          <div class="grid" aria-live="polite">
+            {% for tool in tools %}
+              {% set badge = availability_meta.get(tool.availability, availability_meta['out_of_stock']) %}
+              <article class="card" aria-labelledby="{{ tool.id }}-title">
+                <div class="card__img">
+                  <img src="{{ tool.image or placeholder_img }}" alt="{{ tool.name }}" loading="lazy" decoding="async" />
+                </div>
+                <div class="card__body">
+                  <div class="card__actions">
+                    <h3 id="{{ tool.id }}-title" style="margin:0">{{ tool.name }}</h3>
+                    <span class="{{ badge.cls }}"><span class="dot"></span>{{ badge.text }}</span>
+                  </div>
+                  <p class="meta">{{ tool.short_description }}</p>
+                  <div class="specs">
+                    {% for spec in tool.specs %}
+                      <span class="spec" aria-label="характеристика">{{ spec }}</span>
+                    {% endfor %}
+                  </div>
+                  <div class="card__actions">
+                    <div>
+                      <div class="price">от {{ tool.daily_price|money }}/день</div>
+                      {% if tool.weekend_price %}<div class="meta">Выходные: {{ tool.weekend_price|money }}</div>{% endif %}
+                      {% if tool.deposit %}<div class="meta">Возвратный залог: <strong>{{ tool.deposit|money }}</strong></div>{% endif %}
+                      {% if tool.quantity is not none %}<div class="meta">В наличии: <strong>{{ tool.quantity }}</strong> шт.</div>{% endif %}
+                    </div>
+                    {% if tool.availability == 'out_of_stock' %}
+                      <span class="btn btn--secondary" aria-disabled="true">Нет в наличии</span>
+                    {% else %}
+                      <a class="btn btn--secondary" href="{{ url_for('index', q=search_term, tag=active_tag, preselect=tool.id) }}#contact">Бронировать</a>
+                    {% endif %}
+                  </div>
+                  {% if tool.availability == 'out_of_stock' %}
+                    <div class="meta">Сейчас нет в наличии — оставьте заявку.</div>
+                  {% endif %}
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="meta">По вашему запросу ничего не найдено. Попробуйте изменить фильтр.</p>
+        {% endif %}
       </div>
     </section>
 
@@ -144,8 +193,8 @@
           <table aria-label="Тарифы">
             <thead><tr><th>Тариф</th><th>Описание</th></tr></thead>
             <tbody>
-              <tr><td><strong>День</strong></td><td>От <span class="price" id="priceDay">—</span> / сутки — зависит от инструмента</td></tr>
-              <tr><td><strong>Выходные</strong></td><td>От <span class="price" id="priceWeekend">—</span> за субботу+воскресенье</td></tr>
+              <tr><td><strong>День</strong></td><td>От <span class="price">{{ min_day|money }}</span> / сутки — зависит от инструмента</td></tr>
+              <tr><td><strong>Выходные</strong></td><td>От <span class="price">{{ min_weekend|money }}</span> за субботу+воскресенье</td></tr>
               <tr><td><strong>Неделя</strong></td><td>Скидка ~15% от дневной ставки (уточняйте при бронировании)</td></tr>
             </tbody>
           </table>
@@ -180,25 +229,39 @@
           <h2 id="contact-title">Связаться и забронировать</h2>
           <div class="stack">
             <div>
-              <div><strong>Телефон:</strong> <a id="phoneLink" href="tel:"></a></div>
-              <div><strong>Telegram:</strong> <a id="tgLink" target="_blank" rel="noopener"></a></div>
+              <div><strong>Телефон:</strong> <a href="tel:{{ owner_phone_href }}">{{ owner_phone }}</a></div>
+              <div><strong>Telegram:</strong> <a href="{{ owner_telegram_href }}" target="_blank" rel="noopener">{{ owner_telegram }}</a></div>
             </div>
-            <form id="form" class="stack" aria-describedby="form-note">
+            <form class="stack" method="post" action="{{ url_for('book') }}" aria-describedby="form-note">
+              {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                  {% for category, message in messages %}
+                    <div class="flash flash--{{ category }}">{{ message }}</div>
+                  {% endfor %}
+                {% endif %}
+              {% endwith %}
               <div class="field"><label for="name">Имя</label><input id="name" name="name" required placeholder="Иван" autocomplete="name" /></div>
               <div class="field"><label for="contactWay">Телефон или Telegram</label><input id="contactWay" name="contact" required placeholder="+7… или @username" autocomplete="tel" /></div>
-              <div class="field"><label for="tool">Инструмент</label><select id="tool" name="tool" required></select></div>
-              <div class="field" style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem"><div><label for="from">С даты</label><input id="from" type="date" required /></div><div><label for="to">По дату</label><input id="to" type="date" required /></div></div>
+              <div class="field"><label for="tool">Инструмент</label>
+                <select id="tool" name="tool" required>
+                  <option value="" disabled {% if not preselect %}selected{% endif %}>Выберите инструмент…</option>
+                  {% for tool in all_tools %}
+                    <option value="{{ tool.id }}" {% if preselect == tool.id %}selected{% endif %}>{{ tool.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="field" style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem">
+                <div><label for="from">С даты</label><input id="from" type="date" name="from_date" required /></div>
+                <div><label for="to">По дату</label><input id="to" type="date" name="to_date" required /></div>
+              </div>
               <fieldset class="box" style="border-radius:12px">
                 <legend style="font-weight:700">Доп. опции</legend>
                 <label style="display:flex;gap:.5rem;align-items:center"><input type="checkbox" name="addon_delivery"/> Доставка</label>
                 <label style="display:flex;gap:.5rem;align-items:center"><input type="checkbox" name="addon_bags"/> Мешки/пылесборники</label>
                 <label style="display:flex;gap:.5rem;align-items:center"><input type="checkbox" name="addon_bits"/> Буры/диски</label>
               </fieldset>
-              <div class="field"><label for="notes">Комментарии</label><textarea id="notes" placeholder="Удобное время, адрес, вопросы…"></textarea></div>
-              <div class="stack">
-                <button class="btn btn--primary" type="submit">Отправить заявку</button>
-                <div id="success" class="success" role="status" aria-live="polite"></div>
-              </div>
+              <div class="field"><label for="notes">Комментарии</label><textarea id="notes" name="notes" placeholder="Удобное время, адрес, вопросы…"></textarea></div>
+              <button class="btn btn--primary" type="submit">Отправить заявку</button>
               <p id="form-note" class="meta">Нажимая «Отправить», вы соглашаетесь с <a href="#terms">условиями аренды</a>.</p>
             </form>
           </div>
@@ -212,8 +275,19 @@
           </ul>
           <div class="section" style="padding-top:12px;border:0">
             <h3>Отзывы</h3>
-            <div id="reviews" class="testimonials" aria-live="polite"></div>
-          </div>
+            <div class="testimonials" aria-live="polite">
+              {% for review in reviews %}
+                <blockquote class="box" style="display:flex;gap:.6rem;align-items:flex-start">
+                  <span aria-hidden="true">{{ platform_icons.get(review.platform, '')|safe }}</span>
+                  <span>
+                    <span style="display:block">{{ review.text }}</span>
+                    <span class="meta">— {{ review.author or 'Пользователь' }}, {{ review.date or '' }} · <a href="{{ review.url }}" target="_blank" rel="noopener">Источник</a></span>
+                  </span>
+                </blockquote>
+              {% else %}
+                <p class="meta">Отзывы появятся совсем скоро.</p>
+              {% endfor %}
+            </div>
           </div>
         </aside>
       </div>
@@ -223,7 +297,7 @@
       <div class="container">
         <h2 id="faq-title">Частые вопросы</h2>
         <div class="faq">
-          <details><summary>Нужен ли залог?</summary><p>Да, для части позиций требуется возвратный залог — указан на карточке инструмента. Возвращаем сразу после проверки приёмки.</p></details>
+          <details><summary>Нужен ли залог?</summary><p>Да, для части позиций требуется возвратный залог — указан на карточке инструмента. Возвращаем сразу после приёмки.</p></details>
           <details><summary>Нужен ли паспорт?</summary><p>Да, при заключении договора просим предъявить документ, удостоверяющий личность.</p></details>
           <details><summary>Что если опоздать с возвратом?</summary><p>Продление оплачивается по стандартному тарифу. Сообщите заранее — постараемся подстроиться.</p></details>
           <details><summary>Повреждения и поломки</summary><p>Расходники (буры/диски) изнашиваются — это ок. Существенные поломки компенсируются согласно договору.</p></details>
@@ -243,227 +317,10 @@
   <footer class="footer" role="contentinfo">
     <div class="container" style="display:grid;gap:.6rem">
       <div><strong>ToolRent</strong> — аренда инструментов</div>
-      <div>Тел.: <a id="phoneLinkFooter" href="tel:"></a> · Telegram: <a id="tgLinkFooter" target="_blank" rel="noopener"></a></div>
-      <div class="meta">Часы работы: ежедневно, по записи · © <span id="year"></span> ToolRent</div>
+      <div>Тел.: <a href="tel:{{ owner_phone_href }}">{{ owner_phone }}</a> · Telegram: <a href="{{ owner_telegram_href }}" target="_blank" rel="noopener">{{ owner_telegram }}</a></div>
+      <div class="meta">Часы работы: ежедневно, по записи · © {{ current_year }} ToolRent</div>
       <div class="meta">Сайт создан для быстрой брони. Все цены на сайте «от», итоговая стоимость подтверждается при бронировании.</div>
     </div>
   </footer>
-
-  <script>
-  // ====== Настройки владельца (замените на реальные данные) ======
-  const OWNER_PHONE = '+7 904 608-82-71'; // ← замените
-  const OWNER_TELEGRAM = 'https://t.me/hokkystyle'; // ← замените (ссылка или @username)
-  const GAS_URL = '{{https://script.google.com/macros/s/AKfycbzEt52ggiLNEabIcJQ8G4CL_sIpW9OD93WenRv3c1z2Qc7Gn3n96CzKM1EZWHLZY5fO/exec}}'; // ← Вставьте URL веб‑приложения Google Apps Script
-  const PLACEHOLDER_IMG = 'https://placehold.co/800x600/EEF2FF/1E3A8A?text=Фото+инструмента';
-
-  // ====== Источник данных инвентаря (подключение БД/JSON) ======
-  // По умолчанию грузим JSON-файл inventory.json, который соответствует таблице `inventory`.
-  // Структура: [{ id, name, daily_price, weekend_price, deposit, availability, quantity }]
-  const DATA_SRC = (typeof GAS_URL==='string' && GAS_URL.startsWith('http')) ? `${GAS_URL}?route=inventory` : 'inventory.json';
-
-  // Необязательные метаданные по карточкам (описания, теги, фото, спеки).
-  // Их можно хранить рядом в коде либо в отдельном meta.json и мёрджить по id.
-  const META = {
-    'rotary-hammer': {
-      shortDescription: 'Мощный перфоратор для бетона и каменной кладки.',
-      tags: ['drilling','concrete'],
-      image: 'rotary-hammer.jpg',
-      specs: ['SDS-Plus','900W+','3.0 J ударная энергия']
-    },
-    'space-heater': {
-      shortDescription: 'Электрическая теплопушка для гаражей и объектов.',
-      tags: ['heating','winter'],
-      image: 'space-heater.jpg',
-      specs: ['3–5 кВт','Термостат','230V']
-    },
-    'wall-chaser': {
-      shortDescription: 'Аккуратная штроба под кабель/трубы в бетоне и кирпиче.',
-      tags: ['masonry','cutting'],
-      image: 'wall-chaser.jpg',
-      specs: ['Диски 125 мм','Регулировка ширины/глубины','Порт пылеудаления']
-    },
-    'thermal-camera': {
-      shortDescription: 'Поиск утечек тепла, влаги и эл. неисправностей.',
-      tags: ['inspection','diagnostics'],
-      image: 'thermal-camera.jpg',
-      specs: ['160×120 px','−20°C…400°C','Wi‑Fi экспорт']
-    }
-  };
-
-  let tools = [];
-
-  async function loadInventory(){
-    try{
-      const res = await fetch(DATA_SRC, {cache:'no-store'});
-      if(!res.ok) throw new Error('HTTP '+res.status);
-      const rows = await res.json();
-      // Преобразуем к прежней структуре tools, мёрджим META
-      tools = rows.map(r=>({
-        id: r.id,
-        name: r.name,
-        shortDescription: META[r.id]?.shortDescription || '',
-        dailyPrice: r.daily_price,
-        weekendPrice: r.weekend_price,
-        deposit: r.deposit,
-        tags: META[r.id]?.tags || [],
-        availability: r.availability,
-        quantity: r.quantity ?? 0,
-        image: META[r.id]?.image || '',
-        specs: META[r.id]?.specs || []
-      }));
-      // Обновим цены «от» в таблице тарифов
-      const minDay = Math.min(...tools.filter(t=>t.dailyPrice!=null).map(t=>t.dailyPrice));
-      const minWknd = Math.min(...tools.filter(t=>t.weekendPrice!=null).map(t=>t.weekendPrice));
-      const dayEl = document.getElementById('priceDay'); if(dayEl && isFinite(minDay)) dayEl.textContent = String(minDay);
-      const wkEl = document.getElementById('priceWeekend'); if(wkEl && isFinite(minWknd)) wkEl.textContent = String(minWknd);
-    }catch(err){
-      console.error('Не удалось загрузить инвентарь:', err);
-      tools = [];
-    }
-  }
-
-  // ====== Загрузка и рендер отзывов (из Google Sheets через GAS) ======
-  const PLATFORM_ICONS = {
-    avito: `<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' aria-hidden='true'><circle cx='6' cy='6' r='4'/><circle cx='18' cy='6' r='4'/><circle cx='6' cy='18' r='4'/><circle cx='18' cy='18' r='4'/></svg>`
-  };
-  function reviewCard(r){
-    const icon = PLATFORM_ICONS[r.platform] || '';
-    const date = (r.date || '').split('T')[0];
-    return `<blockquote class="box" style="display:flex;gap:.6rem;align-items:flex-start">
-      <span aria-hidden="true">${icon}</span>
-      <span>
-        <span style="display:block">${r.text||''}</span>
-        <span class="meta">— ${r.author||'Пользователь'}, ${date} · <a href="${r.url}" target="_blank" rel="noopener">Источник</a></span>
-      </span>
-    </blockquote>`;
-  }
-  async function loadReviews(){
-    try{
-      if(!(typeof GAS_URL==='string' && GAS_URL.startsWith('http'))) return;
-      const res = await fetch(`${GAS_URL}?route=reviews`, {cache:'no-store'});
-      if(!res.ok) throw new Error('HTTP '+res.status);
-      const list = await res.json();
-      const box = document.getElementById('reviews');
-      if(!Array.isArray(list) || !box){ return; }
-      box.innerHTML = list.slice(0,6).map(reviewCard).join('');
-    }catch(e){ console.warn('Отзывы недоступны:', e); }
-  }
-
-  // ====== Утилиты ======
-  const $ = s=>document.querySelector(s);
-  const $$ = s=>document.querySelectorAll(s);
-  const money = n=> String(n).replace(/\B(?=(\d{3})+(?!\d))/g,'\u00A0'); // пробелы между тысячами
-  const availBadge = a=>{
-    if(a==='in_stock') return {cls:'badge badge--in',txt:'В наличии'};
-    if(a==='limited') return {cls:'badge badge--lim',txt:'Осталось мало'};
-    return {cls:'badge badge--out',txt:'Нет в наличии'};
-  };
-
-  // ====== Инициализация контактов ======
-  function setContacts(){
-    const phoneDigits = OWNER_PHONE.replace(/[^\d+]/g,'');
-    const tgHref = OWNER_TELEGRAM.startsWith('@')? 'https://t.me/'+OWNER_TELEGRAM.replace('@',''): OWNER_TELEGRAM;
-    $('#phoneLink').textContent = OWNER_PHONE; $('#phoneLink').href = 'tel:'+phoneDigits;
-    $('#tgLink').textContent = OWNER_TELEGRAM; $('#tgLink').href = tgHref;
-    $('#phoneLinkFooter').textContent = OWNER_PHONE; $('#phoneLinkFooter').href = 'tel:'+phoneDigits;
-    $('#tgLinkFooter').textContent = OWNER_TELEGRAM; $('#tgLinkFooter').href = tgHref;
-  }
-
-  // ====== Рендер тегов ======
-  let activeTag = 'all'; let searchTerm = '';
-  function uniqueTags(){
-    const set = new Set(); tools.forEach(t=> (t.tags||[]).forEach(set.add,set));
-    return Array.from(set);
-  }
-  function renderTags(){
-    const tagBar = $('#tagBar'); tagBar.innerHTML='';
-    const makeBtn=(label,val)=>{const b=document.createElement('button');b.className='tag';b.type='button';b.textContent=label;b.setAttribute('aria-pressed',String(activeTag===val));b.addEventListener('click',()=>{activeTag=val;renderTags();renderCards();});return b};
-    tagBar.appendChild(makeBtn('Все','all'));
-    uniqueTags().forEach(t=> tagBar.appendChild(makeBtn('#'+t,t)));
-  }
-
-  // ====== Рендер карточек ======
-  function renderCards(){
-    const grid = $('#grid');
-    const term = searchTerm.trim().toLowerCase();
-    const filtered = tools.filter(t=>{
-      const byTag = activeTag==='all' || (t.tags||[]).includes(activeTag);
-      const byName = !term || (t.name||'').toLowerCase().includes(term);
-      return byTag && byName;
-    });
-    grid.innerHTML = filtered.map(t=>{
-      const badge = availBadge(t.availability||'in_stock');
-      const deposit = (typeof t.deposit==='number')? `<div class="meta">Возвратный залог: <strong>${money(t.deposit)}</strong></div>`: '';
-      const specs = (t.specs||[]).map(s=>`<span class="spec" aria-label="характеристика">${s}</span>`).join('');
-      const disabled = (t.availability==='out_of_stock')? 'disabled' : '';
-      const note = (t.availability==='out_of_stock')? '<div class="meta">Сейчас нет в наличии — оставьте заявку</div>':'';
-      return `
-      <article class="card" aria-labelledby="${t.id}-title">
-        <div class="card__img">
-          <img src="${t.image||''}" alt="${t.name}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${PLACEHOLDER_IMG}'" />
-        </div>
-        <div class="card__body">
-          <div class="card__actions">
-            <h3 id="${t.id}-title" style="margin:0">${t.name}</h3>
-            <span class="${badge.cls}"><span class="dot"></span>${badge.txt}</span>
-          </div>
-          <p class="meta">${t.shortDescription||''}</p>
-          <div class="specs">${specs}</div>
-          <div class="card__actions">
-            <div>
-              <div class="price">от ${money(t.dailyPrice)}/день</div>
-              ${t.weekendPrice? `<div class="meta">Выходные: ${money(t.weekendPrice)}</div>`:''}
-              ${deposit}
-              ${typeof t.quantity==='number'? `<div class="meta">В наличии: <strong>${t.quantity}</strong> шт.</div>`:''}
-            </div>
-            <button class="btn btn--secondary" data-tool="${t.id}" ${disabled}>Забронировать</button>
-          </div>
-          ${note}
-        </div>
-      </article>`;
-    }).join('');
-    // навешиваем обработчики на кнопки
-    grid.querySelectorAll('button[data-tool]').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        const id = btn.getAttribute('data-tool');
-        const t = tools.find(x=>x.id===id);
-        if(!t) return;
-        const sel = $('#tool'); sel.value = id; $('#notes').focus({preventScroll:true});
-        document.location.hash = '#contact';
-      });
-    });
-  }
-
-  // ====== Поиск ======
-  $('#q').addEventListener('input', e=>{ searchTerm = e.target.value; renderCards(); });
-
-  // ====== Форма ======
-  function fillToolSelect(){
-    const sel = $('#tool'); sel.innerHTML = '<option value="" disabled selected>Выберите инструмент…</option>' + tools.map(t=> `<option value="${t.id}">${t.name}</option>`).join('');
-  }
-  $('#form').addEventListener('submit', e=>{
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const data = Object.fromEntries(fd.entries());
-    const tool = tools.find(t=>t.id === (data.tool||''));
-    const msg = `Спасибо, ${data.name||'друг'}! Ваша заявка принята. Мы свяжемся с вами в ближайшее время.\n\nИнструмент: ${tool?tool.name:'—'}\nДаты: ${$('#from').value} → ${$('#to').value}.`;
-    const success = $('#success'); success.style.display='block'; success.textContent = msg;
-    const tgHref = OWNER_TELEGRAM.startsWith('@')? 'https://t.me/'+OWNER_TELEGRAM.replace('@',''): OWNER_TELEGRAM;
-    const link = document.createElement('a'); link.href = tgHref; link.target = '_blank'; link.rel='noopener'; link.className='btn btn--ghost'; link.textContent='Продолжить в Telegram'; success.appendChild(document.createElement('br')); success.appendChild(link);
-    e.currentTarget.reset();
-  });
-
-  // ====== Запуск ======
-  (async function init(){
-    setContacts();
-    await loadInventory();
-    fillToolSelect();
-    renderTags();
-    renderCards();
-    await loadReviews();
-    $('#year').textContent = new Date().getFullYear();
-  })();
-  </script>
-  <noscript>Для работы фильтров и формы бронирования включите JavaScript.</noscript>
 </body>
 </html>
