@@ -187,14 +187,14 @@
               <div class="field"><label for="name">Имя</label><input id="name" name="name" required placeholder="Иван" autocomplete="name" /></div>
               <div class="field"><label for="contactWay">Телефон или Telegram</label><input id="contactWay" name="contact" required placeholder="+7… или @username" autocomplete="tel" /></div>
               <div class="field"><label for="tool">Инструмент</label><select id="tool" name="tool" required></select></div>
-              <div class="field" style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem"><div><label for="from">С даты</label><input id="from" type="date" required /></div><div><label for="to">По дату</label><input id="to" type="date" required /></div></div>
+              <div class="field" style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem"><div><label for="from">С даты</label><input id="from" name="date_from" type="date" required /></div><div><label for="to">По дату</label><input id="to" name="date_to" type="date" required /></div></div>
               <fieldset class="box" style="border-radius:12px">
                 <legend style="font-weight:700">Доп. опции</legend>
                 <label style="display:flex;gap:.5rem;align-items:center"><input type="checkbox" name="addon_delivery"/> Доставка</label>
                 <label style="display:flex;gap:.5rem;align-items:center"><input type="checkbox" name="addon_bags"/> Мешки/пылесборники</label>
                 <label style="display:flex;gap:.5rem;align-items:center"><input type="checkbox" name="addon_bits"/> Буры/диски</label>
               </fieldset>
-              <div class="field"><label for="notes">Комментарии</label><textarea id="notes" placeholder="Удобное время, адрес, вопросы…"></textarea></div>
+              <div class="field"><label for="notes">Комментарии</label><textarea id="notes" name="notes" placeholder="Удобное время, адрес, вопросы…"></textarea></div>
               <div class="stack">
                 <button class="btn btn--primary" type="submit">Отправить заявку</button>
                 <div id="success" class="success" role="status" aria-live="polite"></div>
@@ -253,13 +253,14 @@
   // ====== Настройки владельца (замените на реальные данные) ======
   const OWNER_PHONE = '+7 904 608-82-71'; // ← замените
   const OWNER_TELEGRAM = 'https://t.me/hokkystyle'; // ← замените (ссылка или @username)
-  const GAS_URL = '{{https://script.google.com/macros/s/AKfycbzEt52ggiLNEabIcJQ8G4CL_sIpW9OD93WenRv3c1z2Qc7Gn3n96CzKM1EZWHLZY5fO/exec}}'; // ← Вставьте URL веб‑приложения Google Apps Script
+  const API_BASE = '/api';
+  const INVENTORY_URL = `${API_BASE}/inventory`;
+  const REVIEWS_URL = `${API_BASE}/reviews`;
+  const BOOKINGS_URL = `${API_BASE}/bookings`;
   const PLACEHOLDER_IMG = 'https://placehold.co/800x600/EEF2FF/1E3A8A?text=Фото+инструмента';
 
-  // ====== Источник данных инвентаря (подключение БД/JSON) ======
-  // По умолчанию грузим JSON-файл inventory.json, который соответствует таблице `inventory`.
-  // Структура: [{ id, name, daily_price, weekend_price, deposit, availability, quantity }]
-  const DATA_SRC = (typeof GAS_URL==='string' && GAS_URL.startsWith('http')) ? `${GAS_URL}?route=inventory` : 'inventory.json';
+  // ====== Источник данных инвентаря (PostgreSQL → API) ======
+  // Сервер отдаёт структуру inventory: [{ id, name, daily_price, weekend_price, deposit, availability, quantity }]
 
   // Необязательные метаданные по карточкам (описания, теги, фото, спеки).
   // Их можно хранить рядом в коде либо в отдельном meta.json и мёрджить по id.
@@ -294,7 +295,7 @@
 
   async function loadInventory(){
     try{
-      const res = await fetch(DATA_SRC, {cache:'no-store'});
+      const res = await fetch(INVENTORY_URL, {cache:'no-store'});
       if(!res.ok) throw new Error('HTTP '+res.status);
       const rows = await res.json();
       // Преобразуем к прежней структуре tools, мёрджим META
@@ -322,7 +323,7 @@
     }
   }
 
-  // ====== Загрузка и рендер отзывов (из Google Sheets через GAS) ======
+    // ====== Загрузка и рендер отзывов (через backend API) ======
   const PLATFORM_ICONS = {
     avito: `<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' aria-hidden='true'><circle cx='6' cy='6' r='4'/><circle cx='18' cy='6' r='4'/><circle cx='6' cy='18' r='4'/><circle cx='18' cy='18' r='4'/></svg>`
   };
@@ -339,8 +340,7 @@
   }
   async function loadReviews(){
     try{
-      if(!(typeof GAS_URL==='string' && GAS_URL.startsWith('http'))) return;
-      const res = await fetch(`${GAS_URL}?route=reviews`, {cache:'no-store'});
+      const res = await fetch(REVIEWS_URL, {cache:'no-store'});
       if(!res.ok) throw new Error('HTTP '+res.status);
       const list = await res.json();
       const box = document.getElementById('reviews');
@@ -441,16 +441,62 @@
   function fillToolSelect(){
     const sel = $('#tool'); sel.innerHTML = '<option value="" disabled selected>Выберите инструмент…</option>' + tools.map(t=> `<option value="${t.id}">${t.name}</option>`).join('');
   }
-  $('#form').addEventListener('submit', e=>{
+  $('#form').addEventListener('submit', async e=>{
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const fd = new FormData(form);
     const data = Object.fromEntries(fd.entries());
-    const tool = tools.find(t=>t.id === (data.tool||''));
-    const msg = `Спасибо, ${data.name||'друг'}! Ваша заявка принята. Мы свяжемся с вами в ближайшее время.\n\nИнструмент: ${tool?tool.name:'—'}\nДаты: ${$('#from').value} → ${$('#to').value}.`;
-    const success = $('#success'); success.style.display='block'; success.textContent = msg;
-    const tgHref = OWNER_TELEGRAM.startsWith('@')? 'https://t.me/'+OWNER_TELEGRAM.replace('@',''): OWNER_TELEGRAM;
-    const link = document.createElement('a'); link.href = tgHref; link.target = '_blank'; link.rel='noopener'; link.className='btn btn--ghost'; link.textContent='Продолжить в Telegram'; success.appendChild(document.createElement('br')); success.appendChild(link);
-    e.currentTarget.reset();
+    const payload = {
+      name: (data.name||'').trim(),
+      contact: (data.contact||'').trim(),
+      toolId: data.tool||'',
+      dateFrom: data.date_from || $('#from').value || '',
+      dateTo: data.date_to || $('#to').value || '',
+      notes: data.notes || $('#notes').value || '',
+      addons: {
+        addon_delivery: fd.has('addon_delivery'),
+        addon_bags: fd.has('addon_bags'),
+        addon_bits: fd.has('addon_bits')
+      }
+    };
+    const success = $('#success');
+    success.style.display='block';
+    success.textContent='Отправляем заявку…';
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if(submitBtn) submitBtn.disabled = true;
+    try{
+      const res = await fetch(BOOKINGS_URL, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const body = await res.json().catch(()=>({}));
+      if(!res.ok){
+        throw new Error(body.error || 'Не удалось отправить заявку');
+      }
+      const tool = tools.find(t=>t.id === payload.toolId);
+      const greeting = payload.name ? `Спасибо, ${payload.name}!` : 'Спасибо!';
+      const serverMsg = body.message || 'Ваша заявка принята. Мы свяжемся с вами в ближайшее время.';
+      const dates = `${payload.dateFrom||'—'} → ${payload.dateTo||'—'}`;
+      const summary = `${greeting} ${serverMsg}\n\nИнструмент: ${tool?tool.name:'—'}\nДаты: ${dates}.`;
+      success.textContent='';
+      success.append(document.createTextNode(summary));
+      const tgHref = OWNER_TELEGRAM.startsWith('@')? 'https://t.me/'+OWNER_TELEGRAM.replace('@',''): OWNER_TELEGRAM;
+      const link = document.createElement('a');
+      link.href = tgHref;
+      link.target = '_blank';
+      link.rel='noopener';
+      link.className='btn btn--ghost';
+      link.textContent='Продолжить в Telegram';
+      success.appendChild(document.createElement('br'));
+      success.appendChild(link);
+      form.reset();
+    }catch(err){
+      console.error('Booking submit failed', err);
+      success.textContent='Не удалось отправить заявку. Свяжитесь с нами по телефону или в Telegram.';
+    }finally{
+      if(submitBtn) submitBtn.disabled = false;
+    }
   });
 
   // ====== Запуск ======
