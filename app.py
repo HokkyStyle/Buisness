@@ -4,7 +4,6 @@ import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, List
-
 from flask import Flask, flash, redirect, render_template, request, url_for
 
 BASE_DIR = Path(__file__).parent
