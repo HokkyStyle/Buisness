@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ToolRent — Прокат профессионального инструмента в вашем городе</title>
+  <meta name="description" content="ToolRent — аренда профессионального инструмента с доставкой. Онлайн-каталог из Google Sheets, быстрый отклик в Telegram." />
+  <meta property="og:title" content="ToolRent — Прокат профессионального инструмента" />
+  <meta property="og:description" content="Аренда перфоратора, тепловизора, штробореза и других инструментов. Быстрая связь через Telegram." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://toolrent.example.com" />
+  <meta property="og:image" content="https://toolrent.example.com/og-image.jpg" />
+  <style>
+    :root { --color-primary:#1E3A8A; --color-accent:#F59E0B; --color-bg:#F8FAFC; --color-text:#1F2937; --color-muted:#6B7280; --max-width:1120px; font-size:16px; }
+    *,*::before,*::after{box-sizing:border-box;}
+    body{margin:0;font-family:'Inter', 'Segoe UI', sans-serif;background:var(--color-bg);color:var(--color-text);line-height:1.6;-webkit-font-smoothing:antialiased;}
+    a{color:var(--color-primary);text-decoration:none;}a:hover,a:focus{text-decoration:underline;}
+    header{background:#fff;position:sticky;top:0;z-index:20;border-bottom:1px solid rgba(30,58,138,.1);backdrop-filter:blur(10px);}
+    .nav-wrap{max-width:var(--max-width);margin:0 auto;padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1.5rem;}
+    .logo{font-weight:700;font-size:1.25rem;color:var(--color-primary);letter-spacing:.04em;}
+    nav ul{display:flex;list-style:none;gap:1.25rem;margin:0;padding:0;}
+    nav a{font-weight:500;color:var(--color-text);}nav a:focus,nav a:hover{color:var(--color-primary);} 
+    .cta-btn{display:inline-flex;align-items:center;justify-content:center;padding:.75rem 1.25rem;border-radius:.75rem;background:var(--color-primary);color:#fff;font-weight:600;transition:.2s ease;box-shadow:0 10px 25px rgba(30,58,138,.18);} 
+    .cta-btn:hover,.cta-btn:focus{background:#162c6e;transform:translateY(-1px);} 
+    .hero{padding:5rem 1.5rem 4rem;background:linear-gradient(135deg,#1E3A8A 0%,#233876 40%,#0F172A 100%);color:#fff;text-align:center;}
+    .hero-inner{max-width:720px;margin:0 auto;display:grid;gap:1.5rem;}
+    .hero h1{font-size:2.75rem;line-height:1.1;margin:0;font-weight:700;}
+    .hero p{margin:0;font-size:1.125rem;color:rgba(255,255,255,.85);}
+    .hero-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:1rem;margin-top:1rem;}
+    .hero-actions .secondary{background:#fff;color:var(--color-primary);}
+    main{max-width:var(--max-width);margin:0 auto;padding:4rem 1.5rem;display:flex;flex-direction:column;gap:4rem;}
+    section{scroll-margin-top:5rem;}
+    h2{font-size:2rem;margin:0 0 1.5rem;font-weight:700;color:#0f172a;}
+    .tools-controls{display:flex;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem;align-items:center;}
+    .tools-grid{display:grid;gap:1.5rem;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));}
+    .tool-card{background:#fff;border-radius:1rem;box-shadow:0 15px 35px rgba(15,23,42,.08);display:flex;flex-direction:column;overflow:hidden;transition:transform .2s ease;min-height:100%;}
+    .tool-card:focus-within,.tool-card:hover{transform:translateY(-4px);} 
+    .tool-card img{width:100%;height:180px;object-fit:cover;background:#e2e8f0;}
+    .tool-body{padding:1.25rem;display:flex;flex-direction:column;gap:.75rem;}
+    .tool-title{font-size:1.25rem;font-weight:600;margin:0;color:#0f172a;}
+    .tool-desc{color:var(--color-muted);margin:0;font-size:.95rem;}
+    .price-row{display:flex;flex-wrap:wrap;gap:.75rem;font-weight:600;color:var(--color-primary);}
+    .availability{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .65rem;border-radius:999px;font-size:.78rem;font-weight:600;width:max-content;}
+    .availability.in_stock{background:rgba(16,185,129,.15);color:#047857;}
+    .availability.limited{background:rgba(245,158,11,.18);color:#b45309;}
+    .availability.out_of_stock{background:rgba(248,113,113,.18);color:#b91c1c;}
+    .tags{display:flex;flex-wrap:wrap;gap:.5rem;}
+    .tag{background:rgba(30,58,138,.12);color:var(--color-primary);padding:.35rem .7rem;border-radius:999px;font-size:.78rem;font-weight:500;}
+    .rent-btn{margin-top:auto;align-self:flex-start;}
+    .filters{display:flex;flex-wrap:wrap;gap:.5rem;}
+    .filter-pill{border:1px solid rgba(30,58,138,.35);padding:.45rem .85rem;border-radius:999px;background:#fff;color:var(--color-primary);font-weight:500;cursor:pointer;transition:.2s;}
+    .filter-pill.active{background:var(--color-primary);color:#fff;}
+    .info-grid{display:grid;gap:2rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));}
+    .info-card{background:#fff;border-radius:1rem;padding:1.5rem;box-shadow:0 12px 28px rgba(15,23,42,.08);display:grid;gap:.75rem;}
+    .pricing-table{width:100%;border-collapse:collapse;background:#fff;border-radius:1rem;overflow:hidden;box-shadow:0 12px 32px rgba(15,23,42,.08);}
+    .pricing-table th,.pricing-table td{padding:1rem 1.25rem;text-align:left;border-bottom:1px solid rgba(15,23,42,.08);}
+    .pricing-table tbody tr:last-child td{border-bottom:none;}
+    .pricing-table th{background:rgba(30,58,138,.08);font-weight:600;color:#0f172a;}
+    .contact-box{background:#fff;border-radius:1rem;padding:2rem;box-shadow:0 18px 40px rgba(15,23,42,.12);display:grid;gap:1.5rem;}
+    .contact-highlights{display:grid;gap:.75rem;}
+    .contact-highlights a{font-weight:600;font-size:1.1rem;color:var(--color-primary);} 
+    form{display:grid;gap:1rem;}
+    label{font-weight:600;font-size:.95rem;}
+    input,textarea,select{width:100%;padding:.75rem 1rem;border:1px solid #cbd5f5;border-radius:.75rem;font-size:1rem;font-family:inherit;transition:border-color .2s,box-shadow .2s;}
+    input:focus,textarea:focus,select:focus{outline:none;border-color:var(--color-primary);box-shadow:0 0 0 3px rgba(30,58,138,.2);} 
+    textarea{min-height:120px;resize:vertical;}
+    .consent{display:flex;gap:.75rem;align-items:flex-start;font-size:.9rem;color:var(--color-muted);} 
+    .consent input{margin-top:.2rem;} 
+    .status-message{padding:1rem 1.25rem;border-radius:.75rem;font-weight:600;} 
+    .status-success{background:rgba(16,185,129,.12);color:#047857;} 
+    .status-error{background:rgba(248,113,113,.12);color:#b91c1c;} 
+    .testimonials{display:grid;gap:1.5rem;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));}
+    .testimonial{background:#fff;border-radius:1rem;padding:1.5rem;box-shadow:0 12px 28px rgba(15,23,42,.08);}
+    .faq-item{border-bottom:1px solid rgba(15,23,42,.08);padding:1rem 0;}
+    .faq-item:last-child{border-bottom:none;}
+    .faq-item h3{margin:0 0 .5rem;font-size:1.1rem;}
+    footer{background:#0f172a;color:#e2e8f0;padding:2.5rem 1.5rem;margin-top:4rem;}
+    footer a{color:#f8fafc;}
+    .footer-inner{max-width:var(--max-width);margin:0 auto;display:grid;gap:1.5rem;}
+    .small{font-size:.85rem;color:var(--color-muted);} 
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+    @media (max-width:768px){.nav-wrap{flex-wrap:wrap;}.hero h1{font-size:2.1rem;}.hero{padding:4rem 1rem 3rem;}.tools-controls{flex-direction:column;align-items:stretch;}.hero-actions{flex-direction:column;}.cta-btn{width:100%;}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav-wrap">
+      <div class="logo" aria-label="ToolRent">ToolRent</div>
+      <nav aria-label="Главная навигация">
+        <ul>
+          <li><a href="#tools">Инструменты</a></li>
+          <li><a href="#pricing">Тарифы</a></li>
+          <li><a href="#how">Как это работает</a></li>
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="#contact">Контакты</a></li>
+        </ul>
+      </nav>
+      <a class="cta-btn" href="#contact">Арендовать сейчас</a>
+    </div>
+  </header>
+
+  <section class="hero" id="top">
+    <div class="hero-inner">
+      <h1>Арендуйте профи-инструмент уже сегодня — быстро и выгодно</h1>
+      <p>Самовывоз или доставка по городу. Гибкие суточные и выходные тарифы для частных мастеров и бригад.</p>
+      <div class="hero-actions">
+        <a class="cta-btn secondary" href="#tools">Каталог инструментов</a>
+        <a class="cta-btn" href="#contact">Связаться с нами</a>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section id="tools" aria-labelledby="tools-heading">
+      <div class="section-heading">
+        <h2 id="tools-heading">Каталог инструментов</h2>
+        <p>Каталог подгружается из Google Sheets — обновляйте его в таблице и получайте свежие карточки на сайте.</p>
+      </div>
+      <div class="tools-controls" role="search">
+        <label class="sr-only" for="tool-search">Поиск по названию</label>
+        <input id="tool-search" type="search" placeholder="Поиск по названию..." autocomplete="off" aria-label="Введите название инструмента для поиска" />
+        <div class="filters" id="tag-filters" aria-label="Фильтр по тегам" role="group"></div>
+      </div>
+      <div id="tools-grid" class="tools-grid" aria-live="polite" aria-busy="true"></div>
+      <p id="tools-empty" class="small" hidden>Инструменты не найдены. Попробуйте изменить фильтры или зайдите позже.</p>
+      <p id="tools-error" class="small" hidden>Не удалось загрузить каталог. Обновите страницу или проверьте настройки доступа Google Sheets.</p>
+    </section>
+
+    <section id="pricing">
+      <h2>Прозрачные тарифы аренды</h2>
+      <table class="pricing-table" aria-describedby="pricing-desc">
+        <thead>
+          <tr><th scope="col">План</th><th scope="col">Описание</th><th scope="col">Что входит</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Сутки</th><td>Оптимально для разовых задач и срочных выездов.</td><td>24 часа аренды, консультация по запуску, базовый комплект.</td></tr>
+          <tr><th scope="row">Выходные</th><td>Бронирование с пятницы по понедельник с выгодной ценой.</td><td>Два выходных дня, помощь с подбором расходников.</td></tr>
+          <tr><th scope="row">Неделя</th><td>Скидка до 20% при длительном использовании.</td><td>7 дней аренды, приоритетная замена инструмента, подсказки по сервису.</td></tr>
+        </tbody>
+      </table>
+      <p id="pricing-desc" class="small">Уточняйте стоимость доставки, залога и дополнительных расходников при бронировании.</p>
+    </section>
+
+    <section id="how">
+      <h2>Как проходит аренда</h2>
+      <div class="info-grid">
+        <article class="info-card"><h3>1. Выбираете инструмент</h3><p>Отфильтруйте карточки по тегам (бетон, обогрев, диагностика) и найдите то, что нужно.</p></article>
+        <article class="info-card"><h3>2. Пишите или звоните</h3><p>Оставьте заявку в форме или напишите в Telegram — менеджер ответит в течение 10 минут.</p></article>
+        <article class="info-card"><h3>3. Получаете и работаете</h3><p>Самовывоз из пункта выдачи или доставка по адресу. Поможем с инструктажем и расходниками.</p></article>
+        <article class="info-card"><h3>4. Возврат и возврат залога</h3><p>Проверяем инструмент, возвращаем залог без скрытых комиссий. Возможен продлённый срок.</p></article>
+      </div>
+      <div class="info-grid" aria-label="Дополнительные услуги">
+        <article class="info-card"><h3>Опции по запросу</h3><ul><li>Доставка и забор инструмента</li><li>Наборы буров, дисков, пильных полотен</li><li>Пылесборники и мешки</li></ul></article>
+        <article class="info-card"><h3>Техническая поддержка</h3><p>Работаем ежедневно с 8:00 до 21:00. Поможем подобрать оборудование и поделимся чек-листом по безопасности.</p></article>
+      </div>
+    </section>
+
+    <section id="contact" aria-labelledby="contact-heading">
+      <h2 id="contact-heading">Свяжитесь с нами, чтобы забронировать инструмент</h2>
+      <div class="contact-box">
+        <div class="contact-highlights">
+          <p>Позвоните или напишите — мы подтвердим наличие и подготовим договор.</p>
+          <p><strong>Телефон:</strong> <a href="tel:{{PHONE_NUMBER}}">{{PHONE_NUMBER}}</a></p>
+          <p><strong>Telegram:</strong> <a href="https://t.me/{{TELEGRAM_USERNAME}}" rel="noopener" target="_blank">@{{TELEGRAM_USERNAME}}</a></p>
+        </div>
+        <form id="contact-form" novalidate>
+          <div>
+            <label for="name">Имя *</label>
+            <input id="name" name="name" type="text" autocomplete="name" required placeholder="Как к вам обращаться" />
+          </div>
+          <div>
+            <label for="contact-field">Телефон или Telegram *</label>
+            <input id="contact-field" name="phoneOrTelegram" type="text" autocomplete="tel" required placeholder="Например, +7 900 000-00-00 или @username" />
+          </div>
+          <div>
+            <label for="tool-select">Выбранный инструмент</label>
+            <input id="tool-select" name="toolName" list="tool-options" placeholder="Выберите из каталога" />
+            <datalist id="tool-options"></datalist>
+          </div>
+          <div class="date-grid" style="display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
+            <div>
+              <label for="start-date">Дата начала *</label>
+              <input id="start-date" name="startDate" type="date" required />
+            </div>
+            <div>
+              <label for="end-date">Дата завершения *</label>
+              <input id="end-date" name="endDate" type="date" required />
+            </div>
+          </div>
+          <div>
+            <label for="notes">Комментарии</label>
+            <textarea id="notes" name="notes" placeholder="Расскажите о задаче, нужной комплектации и т.д."></textarea>
+          </div>
+          <div class="consent">
+            <input id="consent" type="checkbox" required aria-describedby="consent-desc" />
+            <label for="consent"><span id="consent-desc">Согласен(а) на обработку персональных данных и получение ответа.</span></label>
+          </div>
+          <button class="cta-btn" type="submit">Отправить заявку</button>
+          <div id="form-status" role="status" aria-live="polite"></div>
+        </form>
+      </div>
+    </section>
+
+    <section>
+      <h2>Отзывы клиентов</h2>
+      <div class="testimonials">
+        <article class="testimonial"><p>«Брали тепловую пушку на запуск склада — оформили вечером, утром всё уже ждало нас. Очень быстро и вежливо!»</p><p><strong>Мария, управляющая складом</strong></p></article>
+        <article class="testimonial"><p>«Понравилось, что инструмент приходит в идеальном состоянии и с расходниками. Продлили аренду в пару кликов.»</p><p><strong>Андрей, электрик</strong></p></article>
+        <article class="testimonial"><p>«Сервис подсказал, какие буры нужны к перфоратору, и помог с доставкой на объект. Будем обращаться ещё.»</p><p><strong>ООО «Строй-Бриг»</strong></p></article>
+      </div>
+    </section>
+
+    <section id="faq" aria-labelledby="faq-heading">
+      <h2 id="faq-heading">FAQ: частые вопросы</h2>
+      <div class="faq">
+        <article class="faq-item"><h3>Нужен ли залог и паспорт?</h3><p>Для большинства инструментов требуется залог (см. карточки) и документ, удостоверяющий личность или реквизиты компании.</p></article>
+        <article class="faq-item"><h3>Что если я опоздаю с возвратом?</h3><p>Сообщите заранее — продлим аренду по актуальной ставке. При задержке без предупреждения начисляем суточную оплату.</p></article>
+        <article class="faq-item"><h3>Что делать в случае поломки?</h3><p>Сразу свяжитесь с нами. Мы оценим повреждения и предложим ремонт или замену по договору.</p></article>
+        <article class="faq-item"><h3>Как работает самовывоз?</h3><p>Пункт выдачи работает ежедневно с 8:00 до 21:00. Возможен бесконтактный забор по коду.</p></article>
+      </div>
+      <p class="small">Нажимая «Отправить заявку», вы подтверждаете согласие с условиями договора аренды. <a href="#">Полные условия аренды</a>.</p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div>
+        <strong>ToolRent</strong>
+        <p>Телефон: <a href="tel:{{PHONE_NUMBER}}">{{PHONE_NUMBER}}</a></p>
+        <p>Telegram: <a href="https://t.me/{{TELEGRAM_USERNAME}}" target="_blank" rel="noopener">@{{TELEGRAM_USERNAME}}</a></p>
+      </div>
+      <div>
+        <p>Режим работы: ежедневно 8:00–21:00</p>
+        <p>Адрес: {{ADDRESS_PLACEHOLDER}}</p>
+      </div>
+      <p class="small">© <span id="year"></span> ToolRent. Все права защищены.</p>
+    </div>
+  </footer>
+
+  <script>
+  const SHEET_ID = '{{GOOGLE_SHEET_ID}}';
+  const TOOLS_SHEET = '{{TOOLS_SHEET_NAME}}';
+  const BACKEND_ENDPOINT = '{{BACKEND_ENDPOINT}}';
+  const TELEGRAM_USERNAME = '{{TELEGRAM_USERNAME}}';
+  const toolsGrid = document.getElementById('tools-grid');
+  const toolsEmpty = document.getElementById('tools-empty');
+  const toolsError = document.getElementById('tools-error');
+  const searchInput = document.getElementById('tool-search');
+  const tagFilters = document.getElementById('tag-filters');
+  const form = document.getElementById('contact-form');
+  const statusBox = document.getElementById('form-status');
+  const toolSelect = document.getElementById('tool-select');
+  const toolOptions = document.getElementById('tool-options');
+  let allTools = [];
+  let activeTags = new Set();
+
+  function parseGviz(jsonText){
+    const match = jsonText.match(/google\.visualization\.Query\.setResponse\((.*)\);?/s);
+    if(!match) throw new Error('GViz response parse error');
+    const data = JSON.parse(match[1]);
+    const cols = data.table.cols.map(col => col.label);
+    return data.table.rows.map(row => {
+      const obj = {};
+      row.c.forEach((cell,idx)=>{ obj[cols[idx]] = cell ? cell.v : ''; });
+      return obj;
+    });
+  }
+
+  async function fetchTools(){
+    try{
+      const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(TOOLS_SHEET)}`;
+      const res = await fetch(url,{cache:'no-cache'});
+      if(!res.ok) throw new Error('Network error');
+      const text = await res.text();
+      const rows = parseGviz(text);
+      allTools = rows.map(row => ({
+        id: row.id,
+        name: row.name,
+        shortDescription: row.shortDescription,
+        dailyPrice: row.dailyPrice,
+        weekendPrice: row.weekendPrice,
+        deposit: row.deposit,
+        tags: row.tags ? row.tags.split(',').map(t=>t.trim()).filter(Boolean) : [],
+        availability: row.availability,
+        image: row.image,
+        specs: row['specs markdown'] ? row['specs markdown'].split(';').map(s=>s.trim()).filter(Boolean) : []
+      })).filter(item => item.id && item.name);
+      renderTagFilters();
+      renderTools();
+      fillDatalist();
+      toolsGrid.setAttribute('aria-busy','false');
+    }catch(err){
+      console.error(err);
+      toolsError.hidden = false;
+      toolsGrid.setAttribute('aria-busy','false');
+    }
+  }
+
+  function renderTagFilters(){
+    const tags = new Set();
+    allTools.forEach(tool => tool.tags.forEach(tag => tags.add(tag)));
+    tagFilters.innerHTML = '';
+    Array.from(tags).sort().forEach(tag => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'filter-pill';
+      btn.textContent = '#'+tag;
+      btn.setAttribute('aria-pressed','false');
+      btn.addEventListener('click',()=>{
+        if(activeTags.has(tag)){ activeTags.delete(tag); btn.classList.remove('active'); btn.setAttribute('aria-pressed','false'); }
+        else { activeTags.add(tag); btn.classList.add('active'); btn.setAttribute('aria-pressed','true'); }
+        renderTools();
+      });
+      tagFilters.appendChild(btn);
+    });
+  }
+
+  function renderTools(){
+    const query = searchInput.value.trim().toLowerCase();
+    const filtered = allTools.filter(tool => {
+      const matchesQuery = !query || tool.name.toLowerCase().includes(query);
+      const matchesTags = !activeTags.size || tool.tags.some(tag => activeTags.has(tag));
+      return matchesQuery && matchesTags;
+    });
+    toolsGrid.innerHTML = '';
+    toolsEmpty.hidden = filtered.length !== 0 || !allTools.length;
+    filtered.forEach(tool => {
+      const card = document.createElement('article');
+      card.className = 'tool-card';
+      card.innerHTML = `
+        <img src="${tool.image}" alt="${tool.name}" loading="lazy" />
+        <div class="tool-body">
+          <span class="availability ${tool.availability}">${availabilityLabel(tool.availability)}</span>
+          <h3 class="tool-title">${tool.name}</h3>
+          <p class="tool-desc">${tool.shortDescription || ''}</p>
+          <div class="price-row"><span>Сутки: ${formatCurrency(tool.dailyPrice)}</span>${tool.weekendPrice?`<span>Выходные: ${formatCurrency(tool.weekendPrice)}</span>`:''}${tool.deposit?`<span>Залог: ${formatCurrency(tool.deposit)}</span>`:''}</div>
+          ${tool.specs.length ? `<ul class="small" style="padding-left:1.1rem;margin:0;">${tool.specs.map(s=>`<li>${escapeHtml(s)}</li>`).join('')}</ul>`:''}
+          <div class="tags">${tool.tags.map(tag=>`<span class="tag">${escapeHtml(tag)}</span>`).join('')}</div>
+          <button class="cta-btn rent-btn" data-tool-id="${tool.id}" data-tool-name="${escapeHtml(tool.name)}">Арендовать</button>
+        </div>`;
+      toolsGrid.appendChild(card);
+    });
+    attachRentButtons();
+  }
+
+  function availabilityLabel(code){
+    switch(code){
+      case 'in_stock': return 'В наличии';
+      case 'limited': return 'Ограниченно';
+      case 'out_of_stock': return 'Нет в наличии';
+      default: return 'Уточняйте';
+    }
+  }
+
+  function formatCurrency(value){
+    if(!value) return 'по запросу';
+    const amount = Number(value);
+    return isNaN(amount) ? value : new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',maximumFractionDigits:0}).format(amount);
+  }
+
+  function escapeHtml(str){
+    return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+  }
+
+  function attachRentButtons(){
+    const buttons = toolsGrid.querySelectorAll('.rent-btn');
+    buttons.forEach(btn => btn.addEventListener('click', () => {
+      const id = btn.dataset.toolId;
+      const name = btn.dataset.toolName;
+      toolSelect.value = name;
+      toolSelect.dataset.toolId = id;
+      toolSelect.focus();
+      document.getElementById('contact').scrollIntoView({behavior:'smooth'});
+    }));
+  }
+
+  function fillDatalist(){
+    toolOptions.innerHTML = '';
+    allTools.forEach(tool => {
+      const option = document.createElement('option');
+      option.value = tool.name;
+      option.setAttribute('data-tool-id', tool.id);
+      toolOptions.appendChild(option);
+    });
+  }
+
+  searchInput.addEventListener('input', renderTools);
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    statusBox.textContent='';
+    statusBox.className='';
+    const formData = new FormData(form);
+    const payload = {
+      name: formData.get('name').trim(),
+      phoneOrTelegram: formData.get('phoneOrTelegram').trim(),
+      toolName: formData.get('toolName').trim(),
+      toolId: findToolId(formData.get('toolName').trim()),
+      startDate: formData.get('startDate'),
+      endDate: formData.get('endDate'),
+      notes: formData.get('notes').trim(),
+      userAgent: navigator.userAgent,
+      referrer: document.referrer || 'direct',
+      pagePath: window.location.pathname,
+      timestamp: new Date().toISOString()
+    };
+    const isValid = payload.name && payload.phoneOrTelegram && payload.startDate && payload.endDate && form.querySelector('#consent').checked;
+    if(!isValid){
+      showStatus('Проверьте, что все обязательные поля заполнены и согласие отмечено.', false);
+      return;
+    }
+    try{
+      const res = await fetch(`${BACKEND_ENDPOINT}/lead`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if(!res.ok || !data.ok) throw new Error('Request failed');
+      showStatus('Заявка отправлена! Мы ответим в ближайшее время.', true);
+      const followBtn = document.createElement('a');
+      followBtn.className='cta-btn';
+      followBtn.href = `https://t.me/${TELEGRAM_USERNAME}`;
+      followBtn.target='_blank';
+      followBtn.rel='noopener';
+      followBtn.textContent='Продолжить в Telegram';
+      statusBox.appendChild(document.createElement('br'));
+      statusBox.appendChild(document.createElement('br'));
+      statusBox.appendChild(followBtn);
+      form.reset();
+    }catch(error){
+      console.error(error);
+      showStatus('Не удалось отправить заявку. Попробуйте снова или свяжитесь по телефону.', false);
+    }
+  });
+
+  function showStatus(message, success){
+    statusBox.textContent = message;
+    statusBox.className = 'status-message ' + (success ? 'status-success' : 'status-error');
+  }
+
+  function findToolId(name){
+    const tool = allTools.find(item => item.name === name);
+    return tool ? tool.id : '';
+  }
+
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  if('scrollBehavior' in document.documentElement.style){
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e){
+        const targetId = this.getAttribute('href');
+        if(targetId.length > 1){
+          e.preventDefault();
+          const target = document.querySelector(targetId);
+          if(target) target.scrollIntoView({behavior:'smooth'});
+        }
+      });
+    });
+  }
+
+  fetchTools();
+  </script>
+</body>
+</html>
